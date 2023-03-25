@@ -1,34 +1,22 @@
-/* eslint-disable func-names */
-/* eslint-disable prefer-arrow-callback */
 'use strict';
 
 const container = document.querySelector('.game-container');
 const modal = document.querySelector('.modal');
+const overlay = document.querySelector('.overlay');
 const modalText = document.querySelector('.modal-text');
 const btnPlayAgain = document.querySelector('.btn-again');
 
-let gameBoard = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '];
+let gameBoard = Array(9).fill(' ');
 
-// Players using factories
 const Player = function (name, value) {
 	return { name, value };
 };
 
-const player1 = Player('You', 'X'); // {name: 'You', value: 'X'}
+const player1 = Player('Player', 'X');
 const player2 = Player('Computer', 'O');
 
 // toggle activePlayer
 let activePlayer = player1;
-
-const getComputerChoice = function () {
-	const availableBoxes = gameBoard
-		.map((box, i) => (box === ' ' ? i : box))
-		.filter(index => index > 0);
-
-	const boxIndex = Math.floor(Math.random() * availableBoxes.length);
-
-	return availableBoxes[boxIndex];
-};
 
 // create board and render on UI
 const generateBoard = function () {
@@ -43,6 +31,16 @@ const generateBoard = function () {
 
 generateBoard();
 
+const getComputerChoice = function () {
+	const availableBoxes = gameBoard
+		.map((box, i) => (box === ' ' ? i : box))
+		.filter(index => index > 0);
+
+	const boxIndex = Math.floor(Math.random() * availableBoxes.length);
+
+	return availableBoxes[boxIndex];
+};
+
 const updateGameBoardArray = function (box) {
 	gameBoard[box] = activePlayer.value;
 };
@@ -52,9 +50,47 @@ const togglePlayer = function () {
 };
 
 const updateUI = function () {
-	[...container.childNodes].forEach((boxDiv, i) => {
+	[...container.childNodes].forEach((box, i) => {
+		const boxDiv = box;
 		boxDiv.textContent = gameBoard[i];
 	});
+};
+
+const openModal = function () {
+	modal.classList.remove('hidden');
+	overlay.classList.remove('hidden');
+};
+
+const closeModal = function () {
+	modal.classList.add('hidden');
+	overlay.classList.add('hidden');
+};
+
+const winningCombos = ['012', '345', '678', '036', '147', '258', '048', '246'];
+
+const checkWinningCombo = function (str) {
+	const winningComboArr = winningCombos.map(combo =>
+		[...combo].every(char => str.includes(char))
+	);
+	if (winningComboArr.includes(true)) {
+		openModal();
+
+		modalText.innerHTML = `${activePlayer.name} wins!`;
+	} else if (!gameBoard.includes(' ')) {
+		openModal();
+		modalText.innerHTML = `It's a tie!`;
+	}
+};
+
+const checkWinner = function () {
+	const activePlayerIndexes = gameBoard
+		.map((a, i) => (a === activePlayer.value ? i : 'no'))
+		.filter(num => num >= 0);
+
+	if (activePlayerIndexes.length < 3) return;
+
+	const activePlayerNums = activePlayerIndexes.join('');
+	checkWinningCombo(activePlayerNums);
 };
 
 container.addEventListener('click', function (e) {
@@ -64,7 +100,6 @@ container.addEventListener('click', function (e) {
 	if (gameBoard[boxNumber] !== ' ') return;
 
 	updateGameBoardArray(boxNumber);
-
 	updateUI();
 	checkWinner();
 
@@ -85,37 +120,10 @@ container.addEventListener('click', function (e) {
 	}
 });
 
-const winningCombos = ['012', '345', '678', '036', '147', '258', '048', '246'];
-
-const checkWinningCombo = function (str) {
-	const winningComboArr = winningCombos.map(combo =>
-		[...combo].every(char => str.includes(char))
-	);
-	if (winningComboArr.includes(true)) {
-		modal.classList.remove('hidden');
-		modalText.innerHTML = `${activePlayer.name} wins! 🥳`;
-	} else if (!gameBoard.includes(' ')) {
-		modal.classList.remove('hidden');
-		modalText.innerHTML = `It's a tie!`;
-	}
-};
-
-const checkWinner = function () {
-	const activePlayerIndexes = gameBoard
-		.map((a, i) => (a === activePlayer.value ? i : 'no'))
-		.filter(num => num >= 0);
-
-	if (activePlayerIndexes.length < 3) return;
-
-	const activePlayerNums = activePlayerIndexes.join('');
-	checkWinningCombo(activePlayerNums);
-};
-
 btnPlayAgain.addEventListener('click', function () {
-	modal.classList.add('hidden');
-
-	// reset Gameboard
 	activePlayer = player1;
-	gameBoard = gameBoard.map(box => ' ');
+	gameBoard.length = 0;
+	gameBoard = Array(9).fill(' ');
+	closeModal();
 	updateUI();
 });
